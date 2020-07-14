@@ -14,13 +14,31 @@ MonoBehaviour:
   id: ReversedEdgework
   title: Reversed Edgework
   author: Livio, ktane1, Marksam32
-  description: 'Reversed Edgework is like Soviet Edgework
+  description: 'In America you answer edgework, in Soviet Russia, edgework answers
+    you!
 
 
-    Manual available soon on:
+    Created by: Livio, ktane1
+
+    Reuploaded by: Marksam
+
+    Twitch plays is supported.
 
 
-    https://ktane.timwi.de'
+    Manual:
+
+    HTM: (Soon)
+
+    PDF: https://github.com/marksam32/ktaneReversedEdgework/blob/master/Manual/pdfs/NeedyModules/Reversed%20Edgework%20%E2%80%94%20Keep%20Talking%20and%20Nobody%20Explodes%20Module.pdf
+
+
+    Module id: ReversedEdgework
+
+    Github: https://github.com/marksam32/ktaneReversedEdgework
+
+
+    If you want to report any bugs or typos in the manual or in the module, please
+    contact me on discord: Marksam32#6669'
   version: 1.0
   outputFolder: build
   previewImage: {fileID: 2800000, guid: 5055542096273354a8a7f66fc301596a, type: 3}
