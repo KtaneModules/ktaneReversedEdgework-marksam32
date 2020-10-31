@@ -5,11 +5,8 @@ using KModkit;
 using System.Linq;
 using rnd = UnityEngine.Random;
 
-public class ReversedEdgeworkScript : MonoBehaviour 
+public class ReversedEdgeworkScript : MonoBehaviour
 {
-    public ReversedEdgeworkQuestion[] questions;
-    public ReversedEdgeworkQuestion mainQuestion;
-
     public KMAudio ModuleAudio;
     public KMNeedyModule Module;
     public KMBombInfo BombInfo;
@@ -17,76 +14,88 @@ public class ReversedEdgeworkScript : MonoBehaviour
     private int _moduleId;
     public KMSelectable[] Buttons;
     public TextMesh[] texts;
-    public ReversedEdgeworkQuestion[] assignedQuestions = new ReversedEdgeworkQuestion[4];
+    
+    private readonly ReversedEdgeworkQuestion[] _assignedQuestions = new ReversedEdgeworkQuestion[4];
+    private List<ReversedEdgeworkQuestion> _questions;
+    private ReversedEdgeworkQuestion _mainQuestion;
+
 
     public TextMesh screenText;
 
-    private int startmin;
-    private int startsec;
+    private int _startmin;
+    private int _startsec;
 
-    private bool active = false;
-    
-	// Use this for initialization
-	void Start () {
+    private bool _active;
+
+    // Use this for initialization
+    void Start()
+    {
         _moduleId++;
 
-        startmin = int.Parse(BombInfo.GetFormattedTime().Split(':').First());
-        startsec = int.Parse(BombInfo.GetFormattedTime().Split(':').Last());
+        _startmin = int.Parse(BombInfo.GetFormattedTime().Split(':').First());
+        _startsec = int.Parse(BombInfo.GetFormattedTime().Split(':').Last());
 
-        LogTheFile("The bomb's starting time was " + startmin + " minutes and " + startsec + " seconds.");
+        LogTheFile(string.Format("The bomb's starting time was {0} minutes and {1} seconds.", _startmin, _startsec));
 
-        questions = new [] {
-            new ReversedEdgeworkQuestion{question = "# of INDs", answer = BombInfo.GetIndicators().Count() },
-            new ReversedEdgeworkQuestion{question = "# of lit INDs", answer = BombInfo.GetOnIndicators().Count()},
-            new ReversedEdgeworkQuestion{question = "# of off INDs", answer = BombInfo.GetOffIndicators().Count()},
-            new ReversedEdgeworkQuestion{question = "# of ports", answer = BombInfo.GetPortCount()},
-            new ReversedEdgeworkQuestion{question = "# of port p.s", answer = BombInfo.GetPortPlateCount()},
-            new ReversedEdgeworkQuestion{question = "# of batts", answer = BombInfo.GetBatteryCount()},
-            new ReversedEdgeworkQuestion{question = "# of D batts", answer = BombInfo.GetBatteryCount(Battery.D)},
-            new ReversedEdgeworkQuestion{question = "# of AA batts", answer = BombInfo.GetBatteryCount(Battery.AA)},
-            new ReversedEdgeworkQuestion{question = "# of batt hds", answer = BombInfo.GetBatteryHolderCount()},
-            new ReversedEdgeworkQuestion{question = "First # of SN", answer = BombInfo.GetSerialNumberNumbers().First()},
-            new ReversedEdgeworkQuestion{question = "Last # of SN", answer = BombInfo.GetSerialNumberNumbers().Last()},
-            new ReversedEdgeworkQuestion{question = "# of mod", answer = BombInfo.GetModuleNames().Count()},
-            new ReversedEdgeworkQuestion{question = "# of r. mod", answer = BombInfo.GetSolvableModuleNames().Count()},
-            new ReversedEdgeworkQuestion{question = "# of n. mod", answer = BombInfo.GetModuleNames().Count() - BombInfo.GetSolvableModuleNames().Count()},
-            new ReversedEdgeworkQuestion{question = "b. st. min", answer = startmin},
-            new ReversedEdgeworkQuestion{question = "b. st. sec", answer = startsec}
+        _questions = new List<ReversedEdgeworkQuestion>
+        {
+            new ReversedEdgeworkQuestion("# of INDs", BombInfo.GetIndicators().Count()),
+            new ReversedEdgeworkQuestion("# of lit INDs", BombInfo.GetOnIndicators().Count()),
+            new ReversedEdgeworkQuestion("# of off INDs", BombInfo.GetOffIndicators().Count()),
+            new ReversedEdgeworkQuestion("# of ports", BombInfo.GetPortCount()),
+            new ReversedEdgeworkQuestion("# of port p.s", BombInfo.GetPortPlateCount()),
+            new ReversedEdgeworkQuestion("# of batts", BombInfo.GetBatteryCount()),
+            new ReversedEdgeworkQuestion("# of D batts", BombInfo.GetBatteryCount(Battery.D)),
+            new ReversedEdgeworkQuestion("# of AA batts", BombInfo.GetBatteryCount(Battery.AA)),
+            new ReversedEdgeworkQuestion("# of batt hds", BombInfo.GetBatteryHolderCount()),
+            new ReversedEdgeworkQuestion("First # of SN", BombInfo.GetSerialNumberNumbers().First()),
+            new ReversedEdgeworkQuestion("Last # of SN", BombInfo.GetSerialNumberNumbers().Last()),
+            new ReversedEdgeworkQuestion("# of mod", BombInfo.GetModuleNames().Count),
+            new ReversedEdgeworkQuestion("# of r. mod", BombInfo.GetSolvableModuleNames().Count),
+            new ReversedEdgeworkQuestion("# of n. mod",
+                BombInfo.GetModuleNames().Count - BombInfo.GetSolvableModuleNames().Count),
+            new ReversedEdgeworkQuestion("b. st. min", _startmin),
+            new ReversedEdgeworkQuestion("b. st. sec", _startsec)
         };
-        for (var i = 0; i < 4; ++i) 
+        for (var i = 0; i < 4; ++i)
         {
             int index = i;
-            Buttons[index].OnInteract += delegate 
+            Buttons[index].OnInteract += delegate
             {
                 Buttons[index].AddInteractionPunch();
                 ModuleAudio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, Buttons[index].transform);
-                if (!active)
+                if (!_active)
                 {
                     return false;
                 }
-                if (mainQuestion.answer != assignedQuestions[index].answer)
+
+                if (_mainQuestion.Answer != _assignedQuestions[index].Answer)
                 {
-                    active = false;
-                    foreach (TextMesh text in texts) 
+                    _active = false;
+                    foreach (var text in texts)
                     {
                         text.text = "";
                     }
+
                     screenText.text = "";
-                    LogTheFile("You pressed " + assignedQuestions[index].question + ", which was wrong. Handling Strike and going to sleep.");
+                    LogTheFile(string.Format("You pressed {0}({1}), which was wrong. Handling Strike and going to sleep.",
+                        _assignedQuestions[index].Question, _assignedQuestions[index].Answer.ToString()));
                     Module.HandleStrike();
                     Module.HandlePass();
-                } 
-                else 
+                }
+                else
                 {
-                    active = false;
-                    foreach (TextMesh text in texts) 
+                    _active = false;
+                    foreach (var text in texts)
                     {
                         text.text = "";
                     }
+
                     screenText.text = "";
                     Module.HandlePass();
-                    LogTheFile("Correct question pressed, going to sleep.");
+                    LogTheFile("Correct button pressed, going to sleep.");
                 }
+
                 return false;
             };
             Buttons[index].OnInteractEnded += delegate
@@ -95,110 +104,158 @@ public class ReversedEdgeworkScript : MonoBehaviour
                     Buttons[index].transform);
             };
         }
+
         Module.OnNeedyActivation += GenerateQuestion;
         Module.OnNeedyDeactivation += delegate
         {
-            active = false;
-            foreach (TextMesh text in texts) 
+            _active = false;
+            foreach (var text in texts)
             {
                 text.text = "";
             }
             screenText.text = "";
         };
-        Module.OnTimerExpired += delegate {
+        Module.OnTimerExpired += delegate
+        {
+            foreach (var text in texts)
+            {
+                text.text = "";
+            }
+
+            screenText.text = "";
             LogTheFile("Timer expired, handling Strike");
             Module.HandleStrike();
         };
-	}
+    }
 
     void GenerateQuestion()
     {
-        active = true;
-        List<int> questionsChosen;
-        do
+        _active = true;
+        var questionsChosen = new List<int>
+        {
+            rnd.Range(0, _questions.Count),
+            rnd.Range(0, _questions.Count),
+            rnd.Range(0, _questions.Count),
+            rnd.Range(0, _questions.Count)
+        };
+
+        while (questionsChosen.GroupBy(x => x).Any(x => x.Count() > 1))
         {
             questionsChosen = new List<int>()
             {
-                rnd.Range(0, questions.Length), 
-                rnd.Range(0, questions.Length), 
-                rnd.Range(0, questions.Length), 
-                rnd.Range(0, questions.Length)
-            }; 
-        } while (questionsChosen.GroupBy(x => x).Any(x => x.Count() > 1));
-
-        mainQuestion = questions[questionsChosen[0]];
-        ReversedEdgeworkQuestion question2 = questions[questionsChosen[1]];
-        ReversedEdgeworkQuestion question3 = questions[questionsChosen[2]];
-        ReversedEdgeworkQuestion question4 = questions[questionsChosen[3]];
-
-        List<ReversedEdgeworkQuestion> possible = new List<ReversedEdgeworkQuestion>() { mainQuestion, question2, question3, question4 };
-
-        screenText.text = mainQuestion.answer.ToString();
-
-        for (int i = 0; i < 4; ++i) {
-            assignedQuestions[i] = possible.PickRandom();
-            possible.Remove(assignedQuestions[i]);
-            texts[i].text = assignedQuestions[i].question;
+                rnd.Range(0, _questions.Count),
+                rnd.Range(0, _questions.Count),
+                rnd.Range(0, _questions.Count),
+                rnd.Range(0, _questions.Count)
+            };
         }
-        LogTheFile("I've chosen the following questions: " + assignedQuestions[0].question + ", " + assignedQuestions[1].question + ", " + assignedQuestions[2].question + ", " + assignedQuestions[3].question + ".");
+
+        _mainQuestion = _questions[questionsChosen[0]];
+
+        var possibleQuestions = new List<ReversedEdgeworkQuestion>()
+            {_mainQuestion, _questions[questionsChosen[1]], _questions[questionsChosen[2]], _questions[questionsChosen[3]]};
+
+        screenText.text = _mainQuestion.Answer.ToString();
+
+        possibleQuestions.Shuffle();
+
+        for (int i = 0; i < 4; ++i)
+        {
+            _assignedQuestions[i] = possibleQuestions[i];
+            texts[i].text = _assignedQuestions[i].Question;
+        }
+
+        LogTheFile(string.Format("I've chosen the following questions: {0}.",
+            string.Join(", ", _assignedQuestions.Select(x => x.Question).ToArray())));
+        LogTheFile(string.Format("The number on the display is: {0}", _mainQuestion.Answer.ToString()));
+        LogTheFile(string.Format("One correct answer is: {0}", _mainQuestion.Question));
     }
 
-    void LogTheFile(string logMessage) {
+    void LogTheFile(string logMessage)
+    {
         Debug.LogFormat("[Reversed Edgework #{0}] {1}", _moduleId, logMessage);
     }
 
 #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"Use “!{0} tr/br/tl/bl” to press the button in the corresponding location.";
+    private readonly string TwitchHelpMessage =
+        @"Use “!{0} tr/br/tl/bl” to press the button in the corresponding location.";
 #pragma warning restore 414
+    
     public IEnumerator ProcessTwitchCommand(string command)
     {
         command = command.ToLowerInvariant().Trim();
-        if (!active)
+
+        if (!_active)
         {
-            yield return "sendtochaterror You can't press me when I am not active!";
+            yield return "sendtochaterror How do you think pressing me when I'm not active will benefit you and your bomb? 4Head";
         }
+
+        if (command.StartsWith("press"))
+        {
+            command = string.Join(" ", command.Split(' ').Skip(1).ToArray());
+        }
+
         switch (command)
         {
             case "tl":
+            case "lt":
             case "top left":
             case "top-left":
             case "left top":
             case "left-top":
                 yield return null;
-                Buttons[0].OnInteract();
+                Buttons[0].OnInteract();   
+                yield return new WaitForSeconds(.1f);
+                Buttons[0].OnInteractEnded();
                 yield break;
             case "tr":
+            case "rt":
             case "top right":
             case "top-right":
             case "right top":
             case "right-top":
                 yield return null;
                 Buttons[2].OnInteract();
+                yield return new WaitForSeconds(.1f);
+                Buttons[2].OnInteractEnded();
                 yield break;
             case "bl":
+            case "lb":
             case "bottom left":
             case "bottom-left":
             case "left bottom":
             case "left-bottom":
                 yield return null;
                 Buttons[1].OnInteract();
+                yield return new WaitForSeconds(.1f);
+                Buttons[1].OnInteractEnded();
                 yield break;
             case "br":
+            case "rb":
             case "bottom right":
             case "bottom-right":
             case "right bottom":
             case "right-bottom":
                 yield return null;
                 Buttons[3].OnInteract();
+                yield return new WaitForSeconds(.1f);
+                Buttons[3].OnInteractEnded();
                 yield break;
             default:
-                yield return "sendtochaterror You can only press tl/tr/bl/br";
-                yield break; 
+                yield return string.Format("sendtochaterror Do you honestly expect me to know what {0} means? 4Head", command != string.Empty ? command : "an empty command");
+                yield break;
         }
     }
 }
 
-public class ReversedEdgeworkQuestion{
-    public string question;
-    public int answer;
+public class ReversedEdgeworkQuestion
+{
+    public string Question { get; private set; }
+    public int Answer { get; private set; }
+
+    public ReversedEdgeworkQuestion(string question, int answer)
+    {
+        this.Question = question;
+        this.Answer = answer;
+    }
 }
