@@ -188,6 +188,7 @@ public class ReversedEdgeworkScript : MonoBehaviour
         if (!_active)
         {
             yield return "sendtochaterror How do you think pressing me when I'm not active will benefit you and your bomb? 4Head";
+            yield break;
         }
 
         if (command.StartsWith("press"))
